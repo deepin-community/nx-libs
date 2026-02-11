@@ -1,5 +1,621 @@
-template-repository (1.0-1) unstable; urgency=medium
+nx-libs (2:3.5.99.27-2) unstable; urgency=medium
 
-  * Initial release
+  * debian/patches:
+    + Add +0009_dix-Fix-a-warning-about-GetTimeInMillis-return-value.patch.
+      (Closes: #1086473).
+  * debian/control:
+    + Bump Standards-Version: to 4.7.0. No changes needed.
+    + In B-D, switch from pkg-config to pkgconf.
+  * debian/libxcomp3t64.doc-base:
+    + Fix paths of doc files.
 
- -- Tsic404 <liuheng@deepin.org>  Sat, 28 Jan 2023 13:46:49 +0800
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 15 Jan 2025 23:07:50 +0100
+
+nx-libs (2:3.5.99.27-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Rename libraries for 64-bit time_t transition.  Closes: #1063218
+
+ -- Benjamin Drung <bdrung@debian.org>  Thu, 29 Feb 2024 01:28:17 +0000
+
+nx-libs (2:3.5.99.27-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/control:
+    + Bump Standards-Version: to 4.6.2. No changes needed.
+  * debian/patches:
+    + Drop patches 0001 - 0006. All applied upstream.
+    + Add 0007_nx-X11-Add-support-for-loongarch64-architecture.patch. Add
+      support for loongarch64 architecture. (Closes: #1050485).
+    + Add 0008_nx-X11-programs-Xserver-hw-nxagent-man-nxagent.1-Fix.patch.
+      Fix groff error in man page, properly show all text in the keystrokes.cfg
+      passage. Thanks, lintian.
+    + Mark 200*.patch as Debian-specific.
+  * debian/nx-x11-common.{dir,links}:
+    + Assure that a symlink from /usr/share/nx/fonts to /usr/share/fonts/X11
+      gets provided by the nx-x11-common bin:pkg. (Closes: #1006662).
+  * debian/copyright:
+    + Update auto-generated copyright.in file.
+    + Update copyright attributions.
+  * debian/rules:
+    + Remove left-over files after upstream's distclean Makefile target.
+      (Closes: #1048385).
+  * debian/libnx-x11-6.symbols:
+    + Update symbols.
+  * lintian:
+    + source: Override warning about LICENSE.nxcomp not being listed in
+      d/copyright.
+    + nxagent: Add custom-library-search-path override for /usr/bin/nxagent.
+    + libxcompshad3: Adjust custom-library-search-path override's path syntax.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sun, 27 Aug 2023 10:49:34 +0200
+
+nx-libs (2:3.5.99.26-5) unstable; urgency=medium
+
+  * debian/patches:
+    + Add 0006_nx-X11-Add-support-for-riscv64-architecture.patch. Fix FTBFS on
+      riscv64. (Closes: #995805).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 30 Oct 2021 13:38:02 +0200
+
+nx-libs (2:3.5.99.26-4) unstable; urgency=medium
+
+  * debian/patches:
+    + Add 0005_fix-building-with-binutils-2.36.patch. Fix building against
+      binutils >= 2.36.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sun, 12 Sep 2021 13:06:17 +0200
+
+nx-libs (2:3.5.99.26-3) unstable; urgency=medium
+
+  * debian/{control,rules}:
+    + Switch to using TI RPC implemenation instead of deprecated SunRPC in
+      glibc. (Closes: #992959).
+  * debian/control:
+    + Bump Standards-Version: to 4.6.0. No changes needed.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 11 Sep 2021 23:03:42 +0200
+
+nx-libs (2:3.5.99.26-2) unstable; urgency=medium
+
+  * debian/patches:
+    + Add 0001_Compext.c-fix-comparisons-of-16bit-sequence-numbers.patch.
+      Compext.c: fix comparisons of 16bit sequence numbers. (Closes:
+      #990647).
+    + Add 0002_Forward-ClientMessages-to-nxproxy-side.patch.
+      Forward ClientMessages to nxproxy side. (Closes: #990649).
+    + Add 0003_randr-Do-not-update-ConnectionInfo-if-NULL.patch.
+      randr: Do not update ConnectionInfo if NULL (and avoid the nxagent
+      Xserver from crashing). (Closes: #990650).
+    + Add 0004_document-additional-options-only-nxagent-knows-about.patch.
+      Update man page and --help documentation of nxproxy/nxagent.
+    + Adjust 0004_document-additional-options-only-nxagent-knows-about.patch.
+      Version 3.5.99.26 does not yet have the textclipboard=<bool> session
+      parameter.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 03 Jul 2021 20:42:32 +0200
+
+nx-libs (2:3.5.99.26-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 2002_xserver-xext_set-securitypolicy-path.debian.patch. Not required
+      anymore.
+  * debian/control:
+    + Bump Standards-Version: to 4.5.1. No changes needed.
+  * debian/copyright:
+    + Update copyright attributions.
+  * debian/watch:
+    + Update format version to 4.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 04 Feb 2021 14:46:49 +0100
+
+nx-libs (2:3.5.99.25-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/libxcompshad3.lintian-overrides:
+    + Update tag name (of renamed tag): binary-or-shlib-defines-rpath =>
+      custom-library-search-path.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 04 Nov 2020 13:55:29 +0100
+
+nx-libs (2:3.5.99.24-1) unstable; urgency=medium
+
+  * New upstream release.
+    - Fix FTBFS against gcc-10. (Closes: #957619).
+  * debian/salsa-ci.yml:
+    + Add file.
+  * debian/control:
+    + Bump DH compat level to version 13.
+  * debian/copyright:
+    + Update auto-generated copyright.in file.
+    + Update copyright attributions.
+  * debian/nx-x11proto-*-dev.install:
+    + Some header files have been dropped in the 3.5.99.24 release.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Mon, 29 Jun 2020 22:40:53 +0200
+
+nx-libs (2:3.5.99.23-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/control:
+    + Bump Standards-Version: to 4.5.0. No changes needed.
+  * debian/nxagent.install:
+    + Drop nxagent.xpm from pixmaps/ folder. Not shipped upstream anymore.
+  * debian/rules:
+    + Some extra quotes. Reduce delta between upstream DEB packaging and
+      official Debian package.
+  * debian/copyright:
+    + Update copyright attributions.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 30 Jan 2020 12:01:07 +0100
+
+nx-libs (2:3.5.99.22-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Tue, 27 Aug 2019 21:15:28 +0200
+
+nx-libs (2:3.5.99.21-3) unstable; urgency=medium
+
+  * Source-only re-upload as is.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Tue, 20 Aug 2019 09:01:52 +0200
+
+nx-libs (2:3.5.99.21-2) unstable; urgency=medium
+
+  * debian/control:
+    + Split-out nxdialog bin:pkg (until now shipped in nxagent bin:pkg).
+  * debian/{nxagent,nxdialog}.install:
+    + Move nxdialog files from nxagent.install to nxdialog.install.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Mon, 05 Aug 2019 23:33:49 +0200
+
+nx-libs (2:3.5.99.21-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop several patches, all applied upstream:
+      2004_enforce-lpthread.patch
+      0001_nxagent-Determine-nxagentProgName-only-once.patch
+      0002_nxdialog-bin-nxdialog-Fix-error-dialog-type-not-supp.patch
+      0003_xkbUtils.c-Catch-division-by-zero.patch
+      0004_libNX_X11-add-additional-checks-for-dpy-and-xkb.patch
+  * debian/copyright:
+    + Update copyright attributions.
+    + Update auto-generated copyright.in template file.
+  * debian/nx-x11proto-xext-dev.install:
+    + Drop nx-X11/extensions/xtestext1.h. Dropped upstream.
+  * debian/nxagent.<maintscript>:
+    + Convert to nxagent.maintscript, drop all other nxagent.<scripts>.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Mon, 05 Aug 2019 19:52:59 +0200
+
+nx-libs (2:3.5.99.19-3) unstable; urgency=medium
+
+  * debian/patches (cherry-picked from upstream):
+    + Add 0003_xkbUtils.c-Catch-division-by-zero.patch.
+      Catch occasional division-by-zero error. (Closes: #929498).
+    + Add 0004_libNX_X11-add-additional-checks-for-dpy-and-xkb.patch.
+      Don't reference dpy nor xkb if undefined. (Closes: #929499).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 24 May 2019 22:27:02 +0200
+
+nx-libs (2:3.5.99.19-2) unstable; urgency=medium
+
+  * debian/patches (cherry-picked from upstream):
+    + Add 0001_nxagent-Determine-nxagentProgName-only-once.patch. Keep flavour
+      mode (i.e., running as nxagent or x2goagent) after session resumptions.
+      (Closes: #928760).
+    + Add 0002_nxdialog-bin-nxdialog-Fix-error-dialog-type-not-supp.patch.
+      Cosmetic fix in nxdialog's error output.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sun, 12 May 2019 11:08:25 +0200
+
+nx-libs (2:3.5.99.19-1) unstable; urgency=medium
+
+  * New upstream release.
+    - Rootless session now ignore -geometry option. (Closes: #922220).
+    - View port movement key strokes updated/fixed in default keystrokes.cfg.
+      (Closes: #922392).
+  * debian/copyright:
+    + Update copyright attributions.
+  * debian/libnx-x11-6.symbols:
+    + Update symbols.
+  * debian/patches:
+    + Add 2003_nxdialog-use-python3.patch. Enforce Python3 for nxdialog.
+    + Add 2004_enforce-lpthread.patch. On Debian, enforce -lpthread when
+      building nxcomp. This is a nasty work around for a missing symbols
+      issue that needs to get addressed otherwise in a later upstream
+      release. (Closes: #922293).
+  * debian/{control,nxagent.install}:
+    + Add nxdialog (and dependencies) to bin:pkg nxagent.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 01 Mar 2019 23:24:49 +0100
+
+nx-libs (2:3.5.99.18-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/copyright:
+    + Minor white-space fix.
+  * debian/control:
+    + Trailing comma in last package of B-D: field.
+    + Bump Standards-Version: to 4.3.0. No changes needed.
+  * debian/{control,compat}:
+    + Drop compat file. Switch over to debhelper-compat notation in control file.
+    + Bump DH compat level to version 12.
+  * debian/nxagent.install:
+    + Sync in changes from upstream's nxagent.install file.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 31 Jan 2019 14:38:23 +0100
+
+nx-libs (2:3.5.99.17-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 0001-Makefile-Don-t-do-a-parallel-clean-up-of-nx-X11.-We-.patch,
+           0002-Makefile-targets-Rewriting-and-consolidating-the-tar.patch,
+           0006-Makefile-Enforce-j1-for-BuildDependsOnly-target.patch,
+           0007_MIN-vs-min.patch. All shipped upstream.
+  * debian/control:
+    + Bump Standards-Version: to 4.2.1. No changes needed.
+    + Add to B-D: libxkbfile-dev. Required by xkbcomp.pc (pkg-config).
+    + Add to B-D: x11-xkb-utils. Support automatic xkb dir detections.
+  * debian/nxagent.*:
+    + Drop conffile /etc/nxagent/nxagent.keyboard. Not shipped upstream
+      anymore (+ dpkg-maintscript-helper conffile removals in post/pre scripts).
+  * debian/upstream/metadata:
+    + Add file. Comply with DEP-12.
+  * debian/copyright:
+    + Update autogenerated copyright.in file.
+    + Update copyright attributions.
+  * debian/libnx-x11-6.symbols:
+    + Add *Build-Depends-Package: meta info field.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 22 Nov 2018 11:47:40 +0100
+
+nx-libs (2:3.5.99.16-4) unstable; urgency=medium
+
+  * debian/patches:
+    + Add 0007_MIN-vs-min.patch. Should fix FTBFS on hurd and kFreeBSD.
+  * debian/control:
+    + Bump Standards-Version: to 4.2.0. No changes needed.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Tue, 21 Aug 2018 18:54:04 +0200
+
+nx-libs (2:3.5.99.16-3) unstable; urgency=medium
+
+  * debian/patches:
+    + Rebase 2001_nx-X11_install-location.debian.patch.
+    + Cherry-pick from upstream:
+      0002-Makefile-targets-Rewriting-and-consolidating-the-tar.patch.
+    + Cherry-pick 0006-Makefile-Enforce-j1-for-BuildDependsOnly-target.patch
+      from upstream.
+  * debian/rules:
+    + Makefile (et al.) removal in nx-X11/ has now been moved to the distclean
+      target. Drop that part from override_dh_clean.
+    + Remove date.def during override_dh_clean.
+    + Run dh_auto_clean with --no-parallel.
+    + Avoid parallel build until Xserver build flow has been ported to
+      autotools. (Closes: #895540).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 26 Apr 2018 21:06:49 +0200
+
+nx-libs (2:3.5.99.16-2) unstable; urgency=medium
+
+  * debian/patches:
+    + Add 0001-Makefile-Don-t-do-a-parallel-clean-up-of-nx-X11.-We-.patch.
+      Avoid FTBFS during parallel clean target in nx-X11/ subfolder. (Closes: #895540).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 20 Apr 2018 11:13:59 +0200
+
+nx-libs (2:3.5.99.16-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/control:
+    + Update Vcs-*: fields. Packaging Git has been moved to salsa.debian.org.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 16 Mar 2018 23:56:40 +0100
+
+nx-libs (2:3.5.99.15-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 0001_default-dpi-96.patch,
+           0002_xinerama-bbox-corner-cases.patch.
+      Resolved upstream.
+  * debian/copyright:
+    + Update copyright attributions.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 07 Mar 2018 23:51:57 +0100
+
+nx-libs (2:3.5.99.14-3) unstable; urgency=medium
+
+  * debian/patches:
+    + Cherry-pick upstream-proposed patch 0002_xinerama-bbox-corner-cases.patch.
+      Correct sending RandR events when the agent window is moved into invisible
+      parts of the real Xserver.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 02 Mar 2018 14:11:30 +0100
+
+nx-libs (2:3.5.99.14-2) unstable; urgency=medium
+
+  * debian/patches:
+    + Cherry-pick upstream commit 0001_default-dpi-96.patch. Follow X.org with
+      setting default DPI to 96 (not 75).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 01 Mar 2018 21:38:16 +0100
+
+nx-libs (2:3.5.99.14-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Rebase 2001_nx-X11_install-location.debian.patch.
+  * debian/nx-x11proto-xext-dev.install:
+    + Add shapeconst.h.
+  * debian/copyright:
+    + Update copyright attributions.
+    + Update copyright.in reference template.
+    + Use secure URI for referencing copyright format.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 28 Feb 2018 16:21:13 +0100
+
+nx-libs (2:3.5.99.13-4) unstable; urgency=medium
+
+  * Re-upload as-is to Debian unstable. The previous upload has been removed by
+    FTP master due to flaw in removal bug #890564. This upload obsoletes having
+    nx-libs-lite in Debian.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 17 Feb 2018 23:09:46 +0100
+
+nx-libs (2:3.5.99.13-3) unstable; urgency=medium
+
+  * Re-upload as-is to Debian unstable.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 16 Feb 2018 00:01:23 +0100
+
+nx-libs (2:3.5.99.13-2) experimental; urgency=medium
+
+  [ Helmut Grohne ]
+  * Fix FTCBFS: (Closes: #875867)
+    + Fix build/host confusion in debian/rules.
+    + Pass --host to ./configure.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sun, 28 Jan 2018 14:55:33 +0100
+
+nx-libs (2:3.5.99.13-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/rules:
+    + Evoke dpkg-shlibs with --ignore-missing-info in order to handle the
+      libNX_X11 -> libX11 injection trick gracefully.
+  * debian/control:
+    + Bump Standards-Version: to 4.1.3. No changes needed.
+    + Move over with Maintainer: field to new debian-remote ML on
+      lists.debian.org.
+  * debian/{control,compat}: Bump DH version level to 11.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 20 Jan 2018 13:52:15 +0100
+
+nx-libs (2:3.5.99.12-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/control:
+    + Set Priority: to optional (extra has been deprecated).
+    + Bump Standards-Version: to 4.1.2.
+    + Set Section: to libs for libnx-x11-6 bin:pkg.
+    + Set Section: to libs for libxcomp3 and libxcompshad3 bin:pkgs.
+  * debian/rules:
+    + Fix override_dh_clean for source:pkg builds with missing upstream
+      files in source folder.
+  * debian/copyright:
+    + Update copyright attributions.
+    + Update auto-generated copyright.in file.
+  * debian/nxproxy.install:
+    + The nxproxy binary is now installed into BINDIR directly. No wrapper
+      script needed anymore.
+  * debian/watch:
+    + Use secure URL to obtain upstream sources.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 15 Dec 2017 12:58:53 +0100
+
+nx-libs (2:3.5.99.10-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 0001_fix-FTBFS-on-kFreeBSD.patch. Shipped upstream.
+    + Drop 1001_shrink-mesa-patch-5001.patch. Applied upstream.
+  * debian/control:
+    + Bump Standards-Version: to 4.1.0. No changes needed.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 15 Sep 2017 15:11:33 +0200
+
+nx-libs (2:3.5.99.9-2) experimental; urgency=medium
+
+  * debian/patches:
+    + Add 0001_fix-FTBFS-on-kFreeBSD.patch from upstream. Fix FTBFS on
+      Debian/kFreeBSD.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 06 Sep 2017 10:48:59 +0200
+
+nx-libs (2:3.5.99.9-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 1001_dont-use-mesa-patch-4001.patch. Resolved upstream.
+    + Add 1001_shrink-mesa-patch-5001.patch. Shrink over-zealous Mesa patch.
+  * debian/rules:
+    + Static libraries require stripping since build system has been switched
+      to libtool.
+    + Use --disable-silent-rules and --libexecdir during configure run.
+    + Drop override_dh_clean. Not needed anymore.
+    + Remove some build-cruft in re-introduced override_dh_clean.
+  * debian/control:
+    + Bump Standards-Version: to 4.0.1. No changes needed.
+    + Drop unused libxmltok1-dev from B-D. (Closes: #871824).
+    + Add B-Ds automake and libtool. nxcomp* and libNX_X11 are now built using
+      autoreconf.
+    + Add D (libnx-x11-6): libx11-data.
+  * debian/libnx-x11-6.symbols:
+    + Update libNX_X11 symbols file.
+  * debian/copyright:
+    + Update auto-generated copyright.in file.
+    + Update copyright attributions.
+  * debian/nx-x11-common.install:
+    + Update paths of XErrorDB and Xcms.txt.
+  * debian/libnx-x11-dev.install:
+    + Add static libNX_X11 lib and new pkg-config file.
+  * debian/libxcomp*.install:
+    + Add static libraries to libxcomp*-dev bin:pkgs.
+
+  * Process with wrap-and-sort -s.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 30 Aug 2017 22:19:30 +0200
+
+nx-libs (2:3.5.99.8-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 0001_fix-ftbfs-on-hppa.patch, 0007_fix-ftbfs-on-mips64el.patch.
+      Support for mips64el and hppa has been added by upstream.
+  * debian/{control,compat}:
+    + Bump to DH version level 10.
+  * debian/rules:
+    + Switch from dh_install --fail-missing to dh_missing --fail-missing.
+  * debian/copyright:
+    + Update copyright attributions.
+  * debian/patches:
+    + Rebase 2001_nx-X11_install-location.debian.patch.
+    + Don't use Mesa.patches patch
+      4001_Fix-non-working-GLX-in-64bit-Xorg-7.0.patch. It patches a file,
+      we don't find in the released tarball.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 30 Jun 2017 21:34:27 +0200
+
+nx-libs (2:3.5.99.7-3) experimental; urgency=medium
+
+  * debian/patches:
+    + Fix nasty typo in 0007_fix-ftbfs-on-mips64el.patch.
+      (Mipsel64Architecture -> Mips64elArchitecture).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sun, 07 May 2017 14:43:18 +0200
+
+nx-libs (2:3.5.99.7-2) experimental; urgency=medium
+
+  * debian/patches:
+    + Fix 0001_fix-ftbfs-on-hppa.patch. Debian hppa is big Endian, not
+      little. Thanks to Helge Deller for reviewing this patch.
+    + Re-activate 0007_fix-ftbfs-on-mips64el.patch. Hopefully fix FTBFS on
+      Debian's mips64el architecture. Thanks to Paul Wise for pointing us
+      at this solution.
+    + Update/rebase 2001_nx-X11_install-location.debian.patch.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 06 May 2017 22:09:20 +0200
+
+nx-libs (2:3.5.99.7-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 0003_define-EBADFD-if-undefined.patch, correct fix for this
+      has been applied upstream.
+    + Drop 0004_nx-X11-gnu-hurd-support.patch, now applied upstream.
+    + Add 0001_fix-ftbfs-on-hppa.patch. Fix FTBFS on Debian's hppa platform. Thanks
+      to John Paul Adrian Glaubitz and FU Berlin for providing access to such a
+      porters machine.
+    + Disable 0007_fix-ftbfs-on-mips64el.patch for now, as it is not working.
+      Getting mips64el support in is w-i-p, currently.
+  * debian/copyright:
+    + Update auto-generated copyright.in file.
+    + Update copyright attributions.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Sat, 06 May 2017 01:46:43 +0200
+
+nx-libs (2:3.5.99.6-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Drop 0001_fix-ftbfs-on-aarch64.patch,
+           0002_fix-ftbfs-on-sparc64.patch,
+           0005_define-USE_IEEE-macro-for-more-platforms.patch and
+           0006_fix-duplicate-build-attempt-in-main-Makefile.patch.
+      Patches shipped upstream now.
+  * debian/copyright:
+    + Update copyright attributions.
+    + Update copyright.in file.
+  * debian/control:
+    + Add D (nxagent): x11-xkb-utils (for pulling in the xkbcomp executable).
+  * debian/{control,nx-x11proto-scnsaver-dev.install}:
+    + New bin:package nx-x11proto-scnsaver-dev. This version of nxagent has the
+      MIT-SCREEN-SAVER extension enabled.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Fri, 21 Apr 2017 21:33:09 +0200
+
+nx-libs (2:3.5.99.5-4) experimental; urgency=medium
+
+  * debian/patches:
+    + Add 0006_fix-duplicate-build-attempt-in-main-Makefile.patch. On 'make
+      all', don't call the subfolders' 'build' rules via the '%:' ruleset.
+      Should fix the last issue with building on hurd-i386.
+    + Add 0007_fix-ftbfs-on-mips64el.patch. Blind shot attempt at fixing FTBFS
+      on mip64el architecture.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 13 Apr 2017 16:40:41 +0200
+
+nx-libs (2:3.5.99.5-3) experimental; urgency=medium
+
+  * debian/patches:
+    + Fix UseRpath value in 0004_nx-X11-gnu-hurd-support.patch. Now
+      the FTBFS on hurd-i386 should be resolved.
+  * debian/patches:
+    + Add 0004_define-USE_IEEE-macro-for-more-platforms.patch. Fix another
+      issue causing FTBFS on aarch64 and m68k.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 13 Apr 2017 14:15:42 +0200
+
+nx-libs (2:3.5.99.5-2) experimental; urgency=medium
+
+  * debian/patches: Fix FTBFS on arm64, sparc64 and hurd-i386.
+    + Add 0001_fix-ftbfs-on-aarch64.patch
+    + Add 0002_fix-ftbfs-on-sparc64.patch
+    + Add 0003_define-EBADFD-if-undefined.patch
+    + Add 0004_nx-X11-gnu-hurd-support.patch
+    + Rebase/update 2001_nx-X11_install-location.debian.patch.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Thu, 13 Apr 2017 12:11:08 +0200
+
+nx-libs (2:3.5.99.5-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/control:
+    + Switch B-D from libxfont1-dev to libxfont-dev (Xfont2 API now supported
+      by the nxagent Xserver).
+    + Various improvements for package descriptions.
+  * debian/nx-x11proto-xext-dev:
+    + Install more Xext header files into the corresponding bin:package (instead
+      of removing them prio to dh_install).
+  * debian/nxagent.*: /etc/nxagent/rgb not required anymore. RGB colors are now
+    + hard-coded in the nxagent Xserver.
+  * debian/copyright:
+    + Update auto-generated copyright.in file.
+    + Update copyright attributions.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 12 Apr 2017 14:32:33 +0200
+
+nx-libs (2:3.5.99.4-1) experimental; urgency=medium
+
+  * New upstream release.
+  * debian/patches:
+    + Update 2001_nx-X11_install-location.debian.patch.
+  * debian/nxagent.install:
+    + Fake-libX11 symlinks have been moved to /usr/lib/*/nx/X11 by upstream
+      with this release.
+  * debian/copyright:
+    + Update copyright attributions.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 05 Apr 2017 11:21:47 +0200
+
+nx-libs (2:3.5.99.3-1) experimental; urgency=medium
+
+  * Initial release to Debian. (Closes: #655699).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Tue, 17 Jan 2017 08:28:09 +0100

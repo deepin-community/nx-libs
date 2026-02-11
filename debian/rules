@@ -1,4 +1,78 @@
 #!/usr/bin/make -f
 
+NULL =
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/buildflags.mk
+
+include /usr/share/dpkg/architecture.mk
+
+export LIBDIR = "/usr/lib/$(DEB_HOST_MULTIARCH)"
+export LIBEXECDIR = "$(LIBDIR)/nx/bin"
+export INCLUDEDIR = "/usr/include/$(DEB_HOST_MULTIARCH)"
+
 %:
-	dh $@
+	CONFIGURE="./configure --disable-silent-rules \
+	                       --prefix=/usr \
+	                       --libdir=$(LIBDIR) \
+	                       --includedir=$(INCLUDEDIR) \
+	                       --libexecdir=$(LIBEXECDIR) \
+	                       --build=$(DEB_BUILD_GNU_TYPE) \
+	                       --host=$(DEB_HOST_GNU_TYPE)"  dh $@ --no-parallel --with quilt
+
+override_dh_auto_clean:
+	rm -Rf nx-X11/.build-exports
+	dh_auto_clean --no-parallel
+
+override_dh_clean:
+	dh_clean
+	rm -f nx-X11/config/cf/date.def
+	rm -f nxproxy/m4/lt*.m4 nxproxy/m4/libtool.m4
+	rm -f nx-X11/lib/include/Makefile
+	rm -f nxcomp/test/Makefile.in
+
+override_dh_install:
+
+	# strip static libs and remove .la files
+	rm debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libXcomp.la
+	strip --strip-debug --remove-section=.comment --remove-section=.note debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libXcomp.a
+	rm debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libXcompshad.la
+	strip --strip-debug --remove-section=.comment --remove-section=.note debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libXcompshad.a
+	rm debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libNX_X11.la
+	strip --strip-debug --remove-section=.comment --remove-section=.note debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libNX_X11.a
+
+	# remove extras, GL, and other unneeded headers
+	rm -R debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/GL/
+	rm -R debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/nx-X11/extensions/XK*.h
+	rm -R debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/nx-X11/extensions/*Xv*.h
+	rm -R debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/nx-X11/extensions/XRes*.h
+	rm -R debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/nx-X11/extensions/XIproto.h
+	rm -R debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/nx-X11/extensions/XI.h
+	rm -R debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/nx-X11/Xtrans/
+
+	dh_install
+
+override_dh_missing:
+	dh_missing --fail-missing
+
+override_dh_auto_install:
+	PREFIX='/usr' dh_auto_install --no-parallel -Smakefile
+
+override_dh_auto_build:
+
+	PREFIX='/usr' dh_auto_build --no-parallel -- CDEBUGFLAGS="$(CPPFLAGS) $(CFLAGS)" LOCAL_LDFLAGS="$(LDFLAGS)" SHLIBGLOBALSFLAGS='$(filter-out -pie,$(LDFLAGS))' IMAKE_DEFINES="-DUseTIRPC=1"
+
+override_dh_makeshlibs:
+	dh_makeshlibs -n
+
+# Needed for the libX11 RUNPATH/RPATH link-time hack.
+# dh_shlibdeps will follow dependencies within binaries and choke
+# on the libX11 dependency, since the SONAME (libX11.*) used while linking
+# does not match the later detected SONAME (libNX_X11.*) obtained through
+# the libX11 -> libNX_X11 compat symlink.
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info
+
+get-orig-source:
+	uscan --noconf --force-download --rename --download-current-version --destdir=..

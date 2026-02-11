@@ -1,0 +1,20 @@
+UPSTREAM SOURCES
+----------------
+The current upstream source for this package is the Arctica Project.
+https://github.com/ArcticaProject/nx-libs
+
+
+PACKAGE SOURCE TREE
+-------------------
+This package originally pulled in 7 source tarballs from NoMachine:
+
+  nx-X11
+  nxagent
+  nxauth (discontinued in nx-libs)
+  nxcomp
+  nxcompshad
+  nxcompext
+  nxproxy
+
+
+Arctica Project / Mike Gabriel (2016-06-22)
