@@ -1,0 +1,5 @@
+2001_nx-X11_install-location.debian.patch
+2003_nxdialog-use-python3.patch
+0007_nx-X11-Add-support-for-loongarch64-architecture.patch
+0008_nx-X11-programs-Xserver-hw-nxagent-man-nxagent.1-Fix.patch
+0009_dix-Fix-a-warning-about-GetTimeInMillis-return-value.patch

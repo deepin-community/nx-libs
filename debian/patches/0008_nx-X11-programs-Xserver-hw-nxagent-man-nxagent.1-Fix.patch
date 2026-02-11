@@ -1,0 +1,27 @@
+From bdb4eefb6224f2146a0bcc43459651a4d3b2a22f Mon Sep 17 00:00:00 2001
+From: Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+Date: Sun, 27 Aug 2023 12:19:34 +0200
+Subject: [PATCH] nx-X11/programs/Xserver/hw/nxagent/man/nxagent.1: Fix groff
+ error reported by lintian in nxagent man page.
+
+Signed-off-by: Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+---
+ nx-X11/programs/Xserver/hw/nxagent/man/nxagent.1 | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/nx-X11/programs/Xserver/hw/nxagent/man/nxagent.1 b/nx-X11/programs/Xserver/hw/nxagent/man/nxagent.1
+index 5f87fa8d4..0f57c3dcf 100644
+--- a/nx-X11/programs/Xserver/hw/nxagent/man/nxagent.1
++++ b/nx-X11/programs/Xserver/hw/nxagent/man/nxagent.1
+@@ -575,7 +575,7 @@ file is taken). If \fBnxagent\fR is run as \fBx2goagent\fR the defaults are
+ .IR ~/.x2go/keystrokes.cfg
+ and
+ .IR /etc/x2go/keystrokes.cfg
+-. Any keystrokes
++Any keystrokes
+ \fBnxagent\fR knows about that are not defined in this file are
+ ignored. (Only) if no file is found built-in defaults are used. The
+ keystroke file can be re-read by a keystroke (ctrl-alt-k by default).
+-- 
+2.39.2
+

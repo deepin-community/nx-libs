@@ -1,0 +1,3 @@
+# using RUNPATH in libxcompshad3t64 is intentional, it assures a clean integration with our libNX_X11 -> libX11 symbol injection
+libxcompshad3t64 binary: custom-library-search-path RUNPATH /usr/lib/*/nx/X11 [usr/lib/*/libXcompshad.so.3.5.99]
+libxcompshad3t64: package-name-doesnt-match-sonames libxcompshad3

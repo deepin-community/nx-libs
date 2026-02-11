@@ -1,0 +1,20 @@
+#define IHaveSubdirs
+#define PassCDebugFlags CDEBUGFLAGS="$(CDEBUGFLAGS)"
+
+#undef BootstrapCleanSubdirs
+#define BootstrapCleanSubdirs BOOTSTRAPSUBDIRS="$(BOOTSTRAPSUBDIRS)"
+
+NULL =
+
+SUBDIRS = cf
+
+#if defined(XorgVersionString) \
+	&& defined(ProjectRoot) && \
+	defined(BuildBindist)
+all::
+
+clean::
+#endif
+
+MakeSubdirs($(SUBDIRS))
+DependSubdirs($(SUBDIRS))

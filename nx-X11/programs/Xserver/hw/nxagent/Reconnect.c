@@ -1,0 +1,852 @@
+/**************************************************************************/
+/*                                                                        */
+/* Copyright (c) 2001, 2011 NoMachine (http://www.nomachine.com)          */
+/* Copyright (c) 2008-2017 Oleksandr Shneyder <o.shneyder@phoca-gmbh.de>  */
+/* Copyright (c) 2011-2022 Mike Gabriel <mike.gabriel@das-netzwerkteam.de>*/
+/* Copyright (c) 2014-2019 Mihai Moldovan <ionic@ionic.de>                */
+/* Copyright (c) 2014-2022 Ulrich Sibiller <uli42@gmx.de>                 */
+/* Copyright (c) 2015-2016 Qindel Group (http://www.qindel.com)           */
+/*                                                                        */
+/* NXAGENT, NX protocol compression and NX extensions to this software    */
+/* are copyright of the aforementioned persons and companies.             */
+/*                                                                        */
+/* Redistribution and use of the present software is allowed according    */
+/* to terms specified in the file LICENSE which comes in the source       */
+/* distribution.                                                          */
+/*                                                                        */
+/* All rights reserved.                                                   */
+/*                                                                        */
+/* NOTE: This software has received contributions from various other      */
+/* contributors, only the core maintainers and supporters are listed as   */
+/* copyright holders. Please contact us, if you feel you should be listed */
+/* as copyright holder, as well.                                          */
+/*                                                                        */
+/**************************************************************************/
+
+#include <signal.h>
+
+#include "X.h"
+#include "Xproto.h"
+#include "Xpoll.h"
+#include "mi.h"
+#include "fb.h"
+#include "inputstr.h"
+
+#include "Agent.h"
+#include "Atoms.h"
+#include "Drawable.h"
+#include "Client.h"
+#include "Reconnect.h"
+#include "Display.h"
+#include "Dialog.h"
+#include "Screen.h"
+#include "Windows.h"
+#include "Events.h"
+#include "Dialog.h"
+#include "Args.h"
+#include "Font.h"
+#include "GCs.h"
+#include "Trap.h"
+#include "Keyboard.h"
+#include "Composite.h"
+#include "Millis.h"
+#include "Splash.h"
+#include "Error.h"
+#include "Keystroke.h"
+#include "Utils.h"
+#include "Init.h"
+
+#ifdef XKB
+#include "XKBsrv.h"
+#endif
+
+#include <nx/NX.h>
+#include "compext/Compext.h"
+#include <nx/NXalert.h>
+
+/*
+ * Set here the required log level.
+ */
+
+#define PANIC
+#define WARNING
+#undef  TEST
+#undef  DEBUG
+
+#define NXAGENT_RECONNECT_DEFAULT_MESSAGE_SIZE  32
+
+extern Bool nxagentReconnectAllCursor(void*);
+extern Bool nxagentReconnectAllColormap(void*);
+extern Bool nxagentReconnectAllWindows(void*);
+extern Bool nxagentReconnectAllGlyphSet(void*);
+extern Bool nxagentReconnectAllPictFormat(void*);
+extern Bool nxagentReconnectAllPicture(void*);
+
+extern Bool nxagentDisconnectAllPicture(void);
+extern Bool nxagentDisconnectAllWindows(void);
+extern void nxagentDisconnectAllCursor(void);
+
+extern Bool nxagentReconnectFailedFonts(void*);
+extern Bool nxagentInstallFontServerPath(void);
+extern Bool nxagentUninstallFontServerPath(void);
+
+extern void nxagentRemoveXConnection(void);
+
+extern void nxagentInitPointerMap(void);
+
+static char *nxagentGetReconnectError(void);
+
+void nxagentInitializeRecLossyLevel(void);
+
+static char *nxagentReconnectErrorMessage = NULL;
+static int  nxagentReconnectErrorId;
+
+extern Bool nxagentRenderEnable;
+
+extern char *nxagentKeyboard;
+
+extern char *nxagentOptionsFilenameOrString;
+
+enum SESSION_STATE nxagentSessionState = SESSION_STARTING;
+
+struct nxagentExceptionStruct nxagentException = {0, 0};
+
+enum RECONNECTION_STEP
+{
+  DISPLAY_STEP = 0,
+  SCREEN_STEP,
+  FONT_STEP,
+  PIXMAP_STEP,
+  GC_STEP,
+  CURSOR_STEP,
+  COLORMAP_STEP,
+  WINDOW_STEP,
+  GLYPHSET_STEP,
+  PICTFORMAT_STEP,
+  PICTURE_STEP,
+  STEP_NONE
+};
+
+void *reconnectLossyLevel[STEP_NONE];
+
+static enum RECONNECTION_STEP failedStep;
+
+#include <limits.h>
+
+/*
+ * Path of state File
+ */
+char stateFile[PATH_MAX] = {0};
+
+
+void setStatePath(char* path)
+{
+    snprintf(stateFile, PATH_MAX, "%s", path);
+}
+
+void saveAgentState(char* state)
+{
+    if (strlen(stateFile))
+    {
+        FILE* fptr = fopen(stateFile, "w");
+        if (!fptr)
+            return;
+        fprintf(fptr, "%s", state);
+        fclose(fptr);
+    }
+}
+
+
+int nxagentHandleConnectionStates(void)
+{
+  #ifdef TEST
+  fprintf(stderr, "nxagentHandleConnectionStates: Handling Exception with "
+              "state [%s] and transport [%d] and generation [%ld].\n",
+                  DECODE_SESSION_STATE(nxagentSessionState), NXTransRunning(NX_FD_ANY), serverGeneration);
+  fprintf(stderr, "nxagentHandleConnectionStates: Entering with nxagentException.sigHup = [%d], "
+              "nxagentException.ioError = [%d]\n",
+                  nxagentException.sigHup, nxagentException.ioError);
+  #endif
+
+  if (nxagentException.sigHup > 0)
+  {
+    #ifdef TEST
+    fprintf(stderr, "nxagentHandleConnectionStates: Got SIGHUP in the exception flags.\n");
+    #endif
+
+    nxagentException.sigHup = 0;
+
+    if (nxagentSessionState == SESSION_UP)
+    {
+      if (nxagentOption(Persistent))
+      {
+        nxagentSessionState = SESSION_GOING_DOWN;
+
+        #ifdef TEST
+        fprintf(stderr, "nxagentHandleConnectionStates: Handling "
+                    "signal [SIGHUP] by disconnecting the agent.\n");
+
+        #endif
+
+      }
+      else
+      {
+        nxagentTerminateSession();
+      }
+    }
+    else if (nxagentSessionState == SESSION_STARTING)
+    {
+      nxagentTerminateSession();
+
+      #ifdef WARNING
+      fprintf(stderr, "nxagentHandleConnectionStates: Handling signal [SIGHUP] by terminating the agent.\n");
+      #endif
+    }
+    else if (nxagentSessionState == SESSION_DOWN &&
+                 NXTransRunning(NX_FD_ANY) == 0)
+    {
+      nxagentSessionState = SESSION_GOING_UP;
+
+      #ifdef TEST
+      fprintf(stderr, "nxagentHandleConnectionStates: Handling signal [SIGHUP] by reconnecting the agent.\n");
+      #endif
+    }
+    else
+    {
+      #ifdef TEST
+      fprintf(stderr, "nxagentHandleConnectionStates: Handling signal with state [%s] and exception [%d].\n",
+                  DECODE_SESSION_STATE(nxagentSessionState), dispatchException);
+      #endif
+    }
+  }
+
+  if (nxagentNeedConnectionChange())
+  {
+    #ifdef TEST
+    fprintf(stderr, "nxagentHandleConnectionStates: Calling nxagentHandleConnectionChanges "
+                "with ioError [%d] sigHup [%d].\n", nxagentException.ioError, nxagentException.sigHup);
+    #endif
+
+    nxagentHandleConnectionChanges();
+  }
+
+  if (nxagentException.ioError > 0)
+  {
+    #ifdef TEST
+    fprintf(stderr, "nxagentHandleConnectionStates: Got I/O error in the exception flags.\n");
+    #endif
+/*
+TODO: This should be reset only when the state became SESSION_DOWN.
+*/
+    nxagentException.ioError = 0;
+
+    if (nxagentOption(Persistent) && nxagentSessionState != SESSION_STARTING)
+    {
+      if (nxagentSessionState == SESSION_UP)
+      {
+        if ((dispatchException & DE_TERMINATE) == 0)
+        {
+          fprintf(stderr, "Session: Display failure detected at '%s'.\n", GetTimeAsString());
+
+          fprintf(stderr, "Session: Suspending session at '%s'.\n", GetTimeAsString());
+          saveAgentState("SUSPENDING");
+        }
+
+        nxagentDisconnectSession();
+      }
+      else if (nxagentSessionState == SESSION_GOING_DOWN)
+      {
+        #ifdef TEST
+        fprintf(stderr, "nxagentHandleConnectionStates: Got I/O error with session "
+                    "[SESSION_GOING_DOWN].\n");
+        #endif
+      }
+      else if (nxagentSessionState == SESSION_GOING_UP)
+      {
+        #ifdef TEST
+        fprintf(stderr, "nxagentHandleConnectionStates: Got I/O error with session "
+                    "[SESSION_GOING_UP].\n");
+        #endif
+
+        nxagentSessionState = SESSION_GOING_DOWN;
+
+        nxagentSetReconnectError(FAILED_RESUME_DISPLAY_BROKEN_ALERT,
+                                     "Got I/O error during reconnect.");
+
+        nxagentChangeOption(Fullscreen, False);
+
+        return 1;
+      }
+      else if (nxagentSessionState == SESSION_DOWN)
+      {
+        #ifdef TEST
+        fprintf(stderr, "nxagentHandleConnectionStates: Got I/O error with session "
+                    "[SESSION_DOWN]. Ignoring.\n");
+        #endif
+
+        return 1;
+      }
+      else
+      {
+        #ifdef TEST
+        fprintf(stderr, "nxagentHandleConnectionStates: Got I/O error with session "
+                    "[%d].\n", nxagentSessionState);
+        #endif
+      }
+
+      nxagentSessionState = SESSION_DOWN;
+
+      if ((dispatchException & DE_TERMINATE) == 0)
+      {
+        #ifdef NX_DEBUG_INPUT
+        fprintf(stderr, "Session: Session suspended at '%s' timestamp [%u].\n", GetTimeAsString(), GetTimeInMillis());
+        #else
+        fprintf(stderr, "Session: Session suspended at '%s'.\n", GetTimeAsString());
+        #endif
+      }
+      saveAgentState("SUSPENDED");
+
+      nxagentResetDisplayHandlers();
+
+      return 1;
+    }
+
+    fprintf(stderr, "Info: Disconnected from display '%s'.\n", nxagentDisplayName);
+
+    nxagentTerminateSession();
+
+    return -1;
+  }
+
+  return 0;
+}
+
+void nxagentInitializeRecLossyLevel(void)
+{
+  *(int *)reconnectLossyLevel[DISPLAY_STEP]    = 0;
+  *(int *)reconnectLossyLevel[SCREEN_STEP]     = 0;
+  *(int *)reconnectLossyLevel[FONT_STEP]       = 0;
+  *(int *)reconnectLossyLevel[PIXMAP_STEP]     = 0;
+  *(int *)reconnectLossyLevel[GC_STEP]         = 0;
+  *(int *)reconnectLossyLevel[CURSOR_STEP]     = 0;
+  *(int *)reconnectLossyLevel[COLORMAP_STEP]   = 0;
+  *(int *)reconnectLossyLevel[WINDOW_STEP]     = 0;
+  *(int *)reconnectLossyLevel[GLYPHSET_STEP]   = 0;
+  *(int *)reconnectLossyLevel[PICTFORMAT_STEP] = 0;
+  *(int *)reconnectLossyLevel[PICTURE_STEP]    = 0;
+}
+
+void nxagentInitReconnector(void)
+{
+  nxagentReconnectTrap = False;
+
+  reconnectLossyLevel[DISPLAY_STEP]    = malloc(sizeof(int));
+  reconnectLossyLevel[SCREEN_STEP]     = malloc(sizeof(int));
+  reconnectLossyLevel[FONT_STEP]       = malloc(sizeof(int));
+  reconnectLossyLevel[PIXMAP_STEP]     = malloc(sizeof(int));
+  reconnectLossyLevel[GC_STEP]         = malloc(sizeof(int));
+  reconnectLossyLevel[CURSOR_STEP]     = malloc(sizeof(int));
+  reconnectLossyLevel[COLORMAP_STEP]   = malloc(sizeof(int));
+  reconnectLossyLevel[WINDOW_STEP]     = malloc(sizeof(int));
+  reconnectLossyLevel[GLYPHSET_STEP]   = malloc(sizeof(int));
+  reconnectLossyLevel[PICTFORMAT_STEP] = malloc(sizeof(int));
+  reconnectLossyLevel[PICTURE_STEP]    = malloc(sizeof(int));
+}
+
+void nxagentDisconnectSession(void)
+{
+  #ifdef TEST
+  fprintf(stderr, "nxagentDisconnectSession: Disconnecting session with state [%s].\n",
+              DECODE_SESSION_STATE(nxagentSessionState));
+  #endif
+
+  nxagentFreeTimeoutTimer();
+
+  /*
+   * Force an I/O error on the display and wait until the NX transport
+   * is gone.
+   */
+
+  #ifdef TEST
+  fprintf(stderr, "nxagentDisconnectSession: Disconnecting the X display.\n");
+  #endif
+
+  nxagentWaitDisplay();
+
+  /*
+   * Prepare for the next reconnection.
+   */
+
+  #ifdef TEST
+  fprintf(stderr, "nxagentDisconnectSession: Disconnecting all X resources.\n");
+  #endif
+
+  nxagentInitializeRecLossyLevel();
+
+  nxagentBackupDisplayInfo();
+
+  if (nxagentOption(Rootless))
+  {
+    nxagentFreePropertyList();
+  }
+
+  if (nxagentRenderEnable)
+  {
+    nxagentDisconnectAllPicture();
+  }
+
+  nxagentEmptyAllBackingStoreRegions();
+
+  nxagentDisconnectAllWindows();
+  nxagentDisconnectAllCursor();
+  nxagentDisconnectAllPixmaps();
+  nxagentDisconnectAllGCs();
+  nxagentDisconnectDisplay();
+
+  nxagentWMIsRunning = False;
+
+  #ifdef TEST
+  fprintf(stderr, "nxagentDisconnectSession: Disconnection completed. SigHup is [%d]. IoError is [%d].\n",
+              nxagentException.sigHup, nxagentException.ioError);
+  #endif
+}
+
+Bool nxagentReconnectSession(void)
+{
+  char *nxagentOldKeyboard = NULL;
+
+  nxagentResizeDesktopAtStartup = False;
+
+  /*
+   * Propagate device settings if explicitly asked for.
+   */
+
+  nxagentChangeOption(DeviceControl, nxagentOption(DeviceControlUserDefined));
+
+  /*
+   * We need to zero out every new XID created by the disconnected
+   * display.
+   */
+
+  nxagentDisconnectSession();
+
+  /*
+   * Set this in order to let the screen function to behave
+   * differently at reconnection time.
+   */
+
+  nxagentReconnectTrap = True;
+
+  nxagentSetReconnectError(0, NULL);
+
+  if (nxagentKeyboard != NULL)
+  {
+    nxagentOldKeyboard = strndup(nxagentKeyboard, strlen(nxagentKeyboard));
+    if (nxagentOldKeyboard == NULL)
+    {
+      /* 0 means reconnection failed */
+      return 0;
+    }
+
+    SAFE_free(nxagentKeyboard);
+  }
+
+  nxagentSaveOptions();
+
+  nxagentResetOptions();
+
+  nxagentProcessOptions(nxagentOptionsFilenameOrString);
+
+
+  if (!nxagentReconnectDisplay(reconnectLossyLevel[DISPLAY_STEP]))
+  {
+    #ifdef TEST
+    fprintf(stderr, "nxagentReconnectSession: WARNING! Failed display reconnection.\n");
+    #endif
+
+    failedStep = DISPLAY_STEP;
+    goto nxagentReconnectError;
+  }
+
+  if (!nxagentReconnectScreen(reconnectLossyLevel[SCREEN_STEP]))
+  {
+    failedStep = SCREEN_STEP;
+    goto nxagentReconnectError;
+  }
+
+  nxagentDisconnectAllFonts();
+
+  nxagentListRemoteFonts("*", nxagentMaxFontNames);
+
+  if (!nxagentReconnectAllFonts(reconnectLossyLevel[FONT_STEP]))
+  {
+    if (!nxagentReconnectFailedFonts(reconnectLossyLevel[FONT_STEP]))
+    {
+      failedStep = FONT_STEP;
+      goto nxagentReconnectError;
+    }
+    else
+    {
+      #ifdef WARNING
+      fprintf(stderr, "nxagentReconnectSession: WARNING! Unable to retrieve all the fonts currently in use. "
+                  "Missing fonts have been replaced.\n");
+      #endif
+
+      nxagentLaunchDialog(DIALOG_FONT_REPLACEMENT);
+    }
+  }
+
+  /*
+   * Map the main window and send a SetSelectionOwner request to
+   * notify of the agent start.
+   */
+
+  nxagentMapDefaultWindows();
+
+#ifdef NXAGENT_ONSTART
+  /*
+   * Ensure that the SetSelectionOwner request is sent through the
+   * link.
+   */
+
+  XFlush(nxagentDisplay);
+#endif
+
+  NXTransContinue(NULL);
+
+  nxagentEmptyBSPixmapList();
+
+  /* FIXME: nxagentReconnectAllPixmaps will always return 1 */
+  if (!nxagentReconnectAllPixmaps(reconnectLossyLevel[PIXMAP_STEP]))
+  {
+    failedStep = PIXMAP_STEP;
+
+    goto nxagentReconnectError;
+  }
+
+  if (!nxagentReconnectAllGCs(reconnectLossyLevel[GC_STEP]))
+  {
+    failedStep = GC_STEP;
+    goto nxagentReconnectError;
+  }
+
+  if (!nxagentReconnectAllColormap(reconnectLossyLevel[COLORMAP_STEP]))
+  {
+    failedStep = COLORMAP_STEP;
+    goto nxagentReconnectError;
+  }
+
+  if (!nxagentReconnectAllWindows(reconnectLossyLevel[WINDOW_STEP]))
+  {
+    failedStep = WINDOW_STEP;
+    goto nxagentReconnectError;
+  }
+
+  if (nxagentRenderEnable)
+  {
+    if (!nxagentReconnectAllGlyphSet(reconnectLossyLevel[GLYPHSET_STEP]))
+    {
+      failedStep = GLYPHSET_STEP;
+      goto nxagentReconnectError;
+    }
+
+    if (!nxagentReconnectAllPictFormat(reconnectLossyLevel[PICTFORMAT_STEP]))
+    {
+      failedStep = PICTFORMAT_STEP;
+      goto nxagentReconnectError;
+    }
+
+    if (!nxagentReconnectAllPicture(reconnectLossyLevel[PICTURE_STEP]))
+    {
+      failedStep = PICTURE_STEP;
+      goto nxagentReconnectError;
+    }
+  }
+
+  if (!nxagentReconnectAllCursor(reconnectLossyLevel[CURSOR_STEP]))
+  {
+    failedStep = CURSOR_STEP;
+    goto nxagentReconnectError;
+  }
+
+  if (!nxagentSetWindowCursors(reconnectLossyLevel[WINDOW_STEP]))
+  {
+    failedStep = WINDOW_STEP;
+    goto nxagentReconnectError;
+  }
+
+  /* Update remote XKB information */
+  nxagentGetRemoteXkbExtension();
+
+  /* if there's no keyboard definition in the options file
+     restore the previous value. */
+  #ifdef DEBUG
+  fprintf(stderr, "%s: nxagentKeyboard [%s] nxagentOldKeyboard [%s]\n", __func__, nxagentKeyboard, nxagentOldKeyboard);
+  #endif
+  if (nxagentKeyboard == NULL)
+  {
+    nxagentKeyboard = nxagentOldKeyboard;
+    nxagentOldKeyboard = NULL;
+  }
+
+  /* Reset the keyboard only if we detect any changes. */
+  if (nxagentOption(ResetKeyboardAtResume))
+  {
+    if (nxagentKeyboard == NULL || nxagentOldKeyboard == NULL ||
+            strcmp(nxagentKeyboard, nxagentOldKeyboard) != 0 ||
+                strcmp(nxagentKeyboard, "query") == 0 ||
+                    strcmp(nxagentKeyboard, "clone") == 0)
+    {
+      if (nxagentResetKeyboard() == 0)
+      {
+        #ifdef WARNING
+        if (nxagentVerbose)
+        {
+          fprintf(stderr, "%s: Failed to reset keyboard device.\n", __func__);
+        }
+        #endif
+
+        failedStep = WINDOW_STEP;
+        goto nxagentReconnectError;
+      }
+    }
+    else
+    {
+      #ifdef DEBUG
+      fprintf(stderr, "%s: keyboard unchanged - skipping keyboard reset.\n", __func__);
+      #endif
+    }
+  }
+
+  nxagentXkbState.Initialized = False;
+
+  SAFE_free(nxagentOldKeyboard);
+
+  nxagentInitPointerMap();
+
+  nxagentDeactivatePointerGrab();
+
+  nxagentWakeupByReconnect();
+
+  nxagentFreeGCList();
+
+  nxagentRedirectDefaultWindows();
+
+  if (nxagentResizeDesktopAtStartup || nxagentOption(Rootless) || nxagentOption(Xinerama))
+  {
+    nxagentChangeScreenConfig(0, nxagentOption(RootWidth),
+                                  nxagentOption(RootHeight), True);
+
+    nxagentResizeDesktopAtStartup = False;
+  }
+
+  nxagentReconnectTrap = False;
+
+  nxagentExposeArrayIsInitialized = False;
+
+  if (nxagentSessionState != SESSION_GOING_UP)
+  {
+    #ifdef WARNING
+    fprintf(stderr, "nxagentReconnectSession: WARNING! Unexpected session state [%s] while reconnecting.\n",
+                DECODE_SESSION_STATE(nxagentSessionState));
+    #endif
+
+    goto nxagentReconnectError;
+  }
+
+  /* Re-read keystrokes definitions in case the keystrokes file has
+     changed while being suspended */
+  nxagentInitKeystrokes(True);
+
+  #ifdef NX_DEBUG_INPUT
+  fprintf(stderr, "Session: Session resumed at '%s' timestamp [%u].\n", GetTimeAsString(), GetTimeInMillis());
+  #else
+  fprintf(stderr, "Session: Session resumed at '%s'.\n", GetTimeAsString());
+  #endif
+  saveAgentState("RUNNING");
+
+  nxagentRemoveSplashWindow();
+
+  /*
+   * We let the proxy flush the link on our behalf after having opened
+   * the display. We are now entering again the dispatcher so can
+   * flush the link explicitly.
+   */
+
+  #ifdef TEST
+  fprintf(stderr, "nxagentReconnectSession: Setting the NX flush policy to deferred.\n");
+  #endif
+
+  NXSetDisplayPolicy(nxagentDisplay, NXPolicyDeferred);
+
+  nxagentCleanupBackupDisplayInfo();
+
+  return 1;
+
+nxagentReconnectError:
+
+  if (failedStep == DISPLAY_STEP)
+  {
+    #ifdef TEST
+    fprintf(stderr, "nxagentReconnectSession: Reconnection failed in display step. Restoring options.\n");
+    #endif
+
+    nxagentRestoreOptions();
+  }
+  else
+  {
+    nxagentCleanupBackupDisplayInfo();
+  }
+
+  if (*nxagentGetReconnectError() == '\0')
+  {
+    #ifdef WARNING
+    if (nxagentVerbose)
+    {
+      fprintf(stderr, "nxagentReconnectSession: WARNING! The reconnect error message is not set. Failed step is [%d].\n",
+                  failedStep);
+    }
+    #endif
+
+    #ifdef TEST
+    fprintf(stderr, "nxagentReconnectSession: Reconnection failed due to a display error.\n");
+    #endif
+  }
+  else
+  {
+    #ifdef TEST
+    fprintf(stderr, "nxagentReconnectSession: Reconnection failed with reason '%s'\n",
+                nxagentGetReconnectError());
+    #endif
+  }
+
+  if (NXDisplayError(nxagentDisplay) == 0)
+  {
+    nxagentUnmapWindows();
+
+    nxagentFailedReconnectionDialog(nxagentReconnectErrorId, nxagentGetReconnectError());
+  }
+  #ifdef TEST
+  else
+  {
+    fprintf(stderr, "nxagentReconnectSession: Cannot launch the dialog without a valid display.\n");
+  }
+  #endif
+
+  if (failedStep == FONT_STEP)
+  {
+    *((int *) reconnectLossyLevel[FONT_STEP]) = 1;
+  }
+
+  if (nxagentDisplay == NULL)
+  {
+    nxagentDisconnectDisplay();
+  }
+
+  SAFE_free(nxagentOldKeyboard);
+
+  return 0;
+}
+
+void nxagentSetReconnectError(int id, char *format, ...)
+{
+  static int size = 0;
+
+  va_list ap;
+  int n;
+
+  if (format == NULL)
+  {
+    nxagentSetReconnectError(id, "");
+
+    return;
+  }
+
+  nxagentReconnectErrorId = id;
+
+  while (1)
+  {
+    va_start (ap, format);
+
+    n = vsnprintf(nxagentReconnectErrorMessage, size, format, ap);
+
+    va_end(ap);
+
+    if (n > -1 && n < size)
+    {
+      break;
+    }
+    if (n > -1)
+    {
+      size = n + 1;
+    }
+    else
+    {
+      /*
+       * The vsnprintf() in glibc 2.0.6 would return -1 when the
+       * output was truncated. See section NOTES on printf(3).
+       */
+
+      size = (size ? size * 2 : NXAGENT_RECONNECT_DEFAULT_MESSAGE_SIZE);
+    }
+
+    char *tmp = realloc(nxagentReconnectErrorMessage, size);
+
+    if (tmp == NULL)
+    {
+      FatalError("realloc failed");
+    }
+    else
+    {
+      nxagentReconnectErrorMessage = tmp;
+    }
+  }
+
+  return;
+}
+
+static char* nxagentGetReconnectError()
+{
+  if (nxagentReconnectErrorMessage == NULL)
+  {
+    nxagentSetReconnectError(nxagentReconnectErrorId, "");
+  }
+
+  return nxagentReconnectErrorMessage;
+}
+
+void nxagentHandleConnectionChanges(void)
+{
+  #ifdef TEST
+  fprintf(stderr, "nxagentHandleConnectionChanges: Called.\n");
+  #endif
+
+  if (nxagentSessionState == SESSION_GOING_DOWN)
+  {
+    fprintf(stderr, "Session: Suspending session at '%s'.\n", GetTimeAsString());
+    saveAgentState("SUSPENDING");
+
+    nxagentDisconnectSession();
+  }
+  else if (nxagentSessionState == SESSION_GOING_UP)
+  {
+    fprintf(stderr, "Session: Resuming session at '%s'.\n", GetTimeAsString());
+    saveAgentState("RESUMING");
+
+    if (nxagentReconnectSession())
+    {
+      nxagentSessionState = SESSION_UP;
+    }
+    else
+    {
+      nxagentSessionState = SESSION_GOING_DOWN;
+
+      fprintf(stderr, "Session: Display failure detected at '%s'.\n", GetTimeAsString());
+
+      fprintf(stderr, "Session: Suspending session at '%s'.\n", GetTimeAsString());
+      saveAgentState("SUSPENDING");
+
+      nxagentDisconnectSession();
+    }
+  }
+}
