@@ -1,4 +1,4 @@
-libNX_X11.so.6 libnx-x11-6t64 #MINVER#
+libNX_X11.so.6 libnx-x11-6 #MINVER#
 *Build-Depends-Package: libnx-x11-dev
  KeySymToUcs4@Base 3.5.0.29
  XActivateScreenSaver@Base 3.5.0.29

@@ -6,7 +6,7 @@ Uploaders:
  Mike Gabriel <sunweaver@debian.org>,
  Mihai Moldovan <ionic@ionic.de>,
  Debian Remote Maintainers <pkg-remote-team@lists.alioth.debian.org>
-Build-Depends: dpkg-dev (>= 1.22.5),
+Build-Depends:
  autoconf,
  automake,
  debhelper-compat (= 13),
@@ -73,19 +73,18 @@ Description: nx-X11 core wire protocol and auxiliary headers
  for the core nx-X11 protocol, and also provides a number of utility headers,
  used to abstract OS-specific functions.
 
-Package: libnx-x11-6t64
-Provides: ${t64:Provides}
+Package: libnx-x11-6
 Section: libs
 Architecture: any
 Multi-Arch: same
 Depends:
  libx11-data,
- libxcomp3t64 (= ${binary:Version}),
+ libxcomp3 (= ${binary:Version}),
  nx-x11-common (<< ${source:Version}.1),
  nx-x11-common (>= ${source:Version}),
  ${misc:Depends},
  ${shlibs:Depends}
-Breaks:libnx-x11-6 (<< ${source:Version}), 
+Breaks:
  libnx-x11 (<< 2:3.5.0.29-1~),
  libnx-xau6 (<< 2:3.6.0.0),
  libnx-xcomposite1 (<< 2:3.6.0.0),
@@ -99,7 +98,7 @@ Breaks:libnx-x11-6 (<< ${source:Version}),
  libnx-xrender1 (<< 2:3.6.0.0),
  libnx-xtst6 (<< 2:3.6.0.0),
  nxlibs (<= 3.5.1)
-Replaces:libnx-x11-6, 
+Replaces:
  libnx-xau6,
  libnx-xcomposite1,
  libnx-xdamage1,
@@ -150,7 +149,7 @@ Replaces:
  libnx-xrender-dev,
  libnx-xtst-dev,
  nxlibs-dev
-Depends: libnx-x11-6t64 (= ${binary:Version}), ${misc:Depends}
+Depends: libnx-x11-6 (= ${binary:Version}), ${misc:Depends}
 Description: nxagent's libNX_X11 client-part library (development headers)
  NX is a software suite which implements very efficient
  compression of the X11 protocol. This increases performance when
@@ -280,9 +279,9 @@ Package: nxagent
 Architecture: any
 Multi-Arch: foreign
 Depends:
- libnx-x11-6t64 (= ${binary:Version}),
- libxcomp3t64 (= ${binary:Version}),
- libxcompshad3t64 (= ${binary:Version}),
+ libnx-x11-6 (= ${binary:Version}),
+ libxcomp3 (= ${binary:Version}),
+ libxcompshad3 (= ${binary:Version}),
  x11-xkb-utils,
  ${misc:Depends},
  ${shlibs:Depends}
@@ -333,7 +332,7 @@ Description: Dialogs for NX Agent
 Package: nxproxy
 Architecture: any
 Multi-Arch: foreign
-Depends: libxcomp3t64 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Depends: libxcomp3 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Breaks: nxauth, qvd-nxproxy
 Replaces: nxauth, qvd-nxproxy
 Description: NX proxy
@@ -343,14 +342,13 @@ Description: NX proxy
  .
  This package provides the NX proxy (client) binary.
 
-Package: libxcomp3t64
-Provides: ${t64:Provides}
+Package: libxcomp3
 Section: libs
 Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
-Breaks: libxcomp3 (<< ${source:Version}), nxcomp (<= 3.5.1), qvd-libxcomp3
-Replaces: libxcomp3, nxcomp, qvd-libxcomp3
+Breaks: nxcomp (<= 3.5.1), qvd-libxcomp3
+Replaces: nxcomp, qvd-libxcomp3
 Description: NX compression library
  NX is a software suite which implements very efficient
  compression of the X11 protocol. This increases performance when
@@ -362,7 +360,7 @@ Package: libxcomp-dev
 Provides: libxcomp3-dev
 Section: libdevel
 Architecture: any
-Depends: libxcomp3t64 (= ${binary:Version}), ${misc:Depends}
+Depends: libxcomp3 (= ${binary:Version}), ${misc:Depends}
 Breaks: nxcomp-dev (<=3.5.1)
 Replaces: nxcomp-dev
 Description: NX compression library (development headers)
@@ -374,14 +372,13 @@ Description: NX compression library (development headers)
  .
  This package contains the development headers for this library.
 
-Package: libxcompshad3t64
-Provides: ${t64:Provides}
+Package: libxcompshad3
 Section: libs
 Architecture: any
 Multi-Arch: same
-Depends: libnx-x11-6t64 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Breaks: libxcompshad3 (<< ${source:Version}), nxcompshad (<=3.5.1)
-Replaces: libxcompshad3, nxcompshad
+Depends: libnx-x11-6 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Breaks: nxcompshad (<=3.5.1)
+Replaces: nxcompshad
 Description: NX shadowing library
  NX is a software suite which implements very efficient
  compression of the X11 protocol. This increases performance when
@@ -393,7 +390,7 @@ Package: libxcompshad-dev
 Provides: libxcompshad3-dev
 Section: libdevel
 Architecture: any
-Depends: libxcompshad3t64 (= ${binary:Version}), ${misc:Depends}
+Depends: libxcompshad3 (= ${binary:Version}), ${misc:Depends}
 Breaks: nxcompshad-dev (<= 3.5.1)
 Replaces: nxcompshad-dev
 Description: NX shadowing library (development headers)
